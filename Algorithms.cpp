@@ -50,35 +50,19 @@ int Algorithms::isConnected(Graph g)
     return 1;
 }
 
-int Algorithms::shortestPath(Graph g, int start, int end)
+int Algorithms::shortestPath(Graph g, int start, int end) // belman-ford algorithm
 {
     int *dist = new int[g.getNumV()];
     int *pai = new int[g.getNumV()];
 
-    for (int i = 0; i < g.getNumV(); i++)
-    {
-        dist[i] = INT_MAX / 2; // to avoid overflow
-        pai[i] = 0;
-    }
-    if (g.getWeight(start, start) < 0)
-    {
-        std::cout << "negative cycle";
-        return -1;
-    }
-    dist[start] = 0;
+    negativeFinder(g,dist,pai,start);
+    // if (g.getWeight(start, start) < 0)  //to avoid getting stuck in first negative cycle
+    // {
+    //     std::cout << "negative cycle";
+    //     return -1;
+    // }
+   
 
-    for (int i = 0; i < g.getNumV(); i++)
-    {
-        std::vector<int> neighbList = g.getNeighb(i);
-        for (const auto &v : neighbList)
-        {
-            if (dist[i] + g.getWeight(i, v) < dist[v])
-            {
-                dist[v] = dist[i] + g.getWeight(i, v);
-                pai[v] = i;
-            }
-        }
-    }
     if (dist[end] < INT_MAX / 2)
     {
         int index = end;
@@ -95,7 +79,7 @@ int Algorithms::shortestPath(Graph g, int start, int end)
     return -1;
 }
 
-void Algorithms::isVisited(Graph g, int v, bool visited[], int previous[], int end *)
+void Algorithms::isVisited(Graph g, int v, bool visited[], int previous[], int *end)
 {
     vector<int> neighbList;
 
@@ -109,8 +93,11 @@ void Algorithms::isVisited(Graph g, int v, bool visited[], int previous[], int e
 
     for (int i = 0; i < neighbList.size(); i++)
     {
-        previous[neighbList[i]] = v;
-        isVisited(g, neighbList[i], visited, previous);
+        if (previous[v] != neighbList[i])
+        {
+            previous[neighbList[i]] = v;
+            isVisited(g, neighbList[i], visited, previous, end);
+        }
     }
 }
 
@@ -125,7 +112,7 @@ int Algorithms::isContainsCycle(Graph g)
     }
 
     int *previous = new int[g.getNumV()];
-    int end * = new int;
+    int *end = new int;
     *end = -1;
 
     for (int i = 0; i < g.getNumV(); i++)
@@ -140,18 +127,18 @@ int Algorithms::isContainsCycle(Graph g)
             isVisited(g, i, visited, previous, end);
         }
 
-        if (end != -1)
+        if (*end != -1)
         {
-            int index = end;
-            std::cout << end << "<-";
-            while (previous[index] != start)
+            int index = *end;
+            std::cout << *end << "<-";
+            while (previous[index] != *end)
             {
                 std::cout << previous[index] << "<-";
                 index = previous[index];
             }
+            //  std::cout << "<-"<< *end ;
 
-            return end;
-            
+            return *end;
         }
         for (int i = 0; i < g.getNumV(); i++)
         {
@@ -164,3 +151,67 @@ int Algorithms::isContainsCycle(Graph g)
     return 0;
 }
 
+int Algorithms::negativeFinder(Graph g, int *dist, int *pai, int start) // belman-ford algorithm
+{
+
+    for (int i = 0; i < g.getNumV(); i++)
+    {
+        dist[i] = INT_MAX / 2; // to avoid overflow
+        pai[i] = 0;
+    }
+
+    dist[start] = 0;                      // array that calculate the minimum distance between each vertex and start(first vertex)
+    for (int k = 0; k < g.getNumV(); k++) // to make sure we dont have negative cycle
+    {
+
+        for (int i = 0; i < g.getNumV(); i++) // run total e times how to improve the path
+        {
+            std::vector<int> neighbList = g.getNeighb(i);
+            for (const auto &v : neighbList)
+            {
+                if (dist[i] + g.getWeight(i, v) < dist[v])
+                {
+                    dist[v] = dist[i] + g.getWeight(i, v);
+                    pai[v] = i;
+                }
+            }
+        }
+    }
+
+    for (int i = 0; i < g.getNumV(); i++) // run one last time to check if it still changes.if it is- we have negative cycle
+    {
+        std::vector<int> neighbList = g.getNeighb(i);
+        for (const auto &v : neighbList)
+        {
+            if (dist[i] + g.getWeight(i, v) < dist[v])
+            {
+                std::cout << "negative cycle";
+                return -1;
+            }
+        }
+    }
+    return 1;
+}
+
+void Algorithms::negativeCycle(Graph g)
+{
+    int finalCheck = 0;
+    int *dist = new int[g.getNumV()];
+    int *pai = new int[g.getNumV()];
+    for (int i = 0; i < g.getNumV(); i++)
+    {
+        dist[i] = INT_MAX / 2; // to avoid overflow
+        pai[i] = 0;
+    }
+
+    for (int j = 0; j < g.getNumV(); j++)
+    {
+        finalCheck = negativeFinder(g, dist, pai, j);
+        if (finalCheck == -1)
+        {
+            std::cout << "negative cycle";
+            return;
+        }
+    }
+    std::cout << "does not cointain negative cycle";
+}
